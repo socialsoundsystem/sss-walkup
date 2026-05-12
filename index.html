@@ -350,6 +350,9 @@ const T=[
 // WalkUpDB data — 2026-05-11
 // 1089 entries · 940 songs · 730 artists
 
+// WalkUpDB data — 2026-05-11
+// 1089 entries · 940 songs · 730 artists
+
 const P=[
   {n:"Alek Manoah",t:"angels",s:"Big Poppa",a:"The Notorious B.I.G.",p:"P",id:null,src:"auto",upd:"2026-05-11"},
   {n:"Brent Suter",t:"angels",s:"Too Legit To Quit",a:"MC Hammer · Saja",p:"P",id:null,src:"auto",upd:"2026-05-11"},
@@ -1676,51 +1679,61 @@ function onSearch(){SQ=document.getElementById('search').value;document.getEleme
 function clearSearch(){document.getElementById('search').value='';SQ='';document.getElementById('sx').classList.remove('on');renderTeams();}
 
 // ── GEOLOCATION ──────────────────────────────────────────────────────────────
-const GEO=[
-  {c:['san diego','chula vista','escondido','oceanside','carlsbad'],s:['CA'],t:'padres'},
-  {c:['los angeles','long beach','glendale','burbank','pasadena','irvine'],s:['CA'],t:'dodgers'},
-  {c:['anaheim','orange'],s:['CA'],t:'angels'},
-  {c:['san francisco','oakland','san jose','berkeley','sacramento'],s:['CA'],t:'giants'},
-  {c:['new york','brooklyn','bronx','queens','manhattan','yonkers'],s:['NY'],t:'yankees'},
-  {c:['flushing'],s:[],t:'mets'},
-  {c:['boston','cambridge','worcester'],s:['MA'],t:'redsox'},
-  {c:['chicago','wrigley','evanston'],s:['IL'],t:'cubs'},
-  {c:['houston','sugar land','the woodlands'],s:['TX'],t:'astros'},
-  {c:['dallas','arlington','fort worth','plano','frisco'],s:['TX'],t:'rangers'},
-  {c:['atlanta','marietta','roswell','alpharetta'],s:['GA'],t:'braves'},
-  {c:['philadelphia','allentown'],s:['PA'],t:'phillies'},
-  {c:['pittsburgh'],s:[],t:'pirates'},
-  {c:['seattle','bellevue','tacoma','redmond'],s:['WA'],t:'mariners'},
-  {c:['miami','fort lauderdale','boca raton'],s:['FL'],t:'marlins'},
-  {c:['tampa','st. petersburg','clearwater','orlando'],s:['FL'],t:'rays'},
-  {c:['washington','arlington','alexandria'],s:['DC','VA'],t:'nationals'},
-  {c:['baltimore','annapolis'],s:['MD'],t:'orioles'},
-  {c:['cleveland','akron'],s:['OH'],t:'guardians'},
-  {c:['cincinnati','dayton'],s:[],t:'reds'},
-  {c:['st. louis','saint louis'],s:['MO'],t:'cardinals'},
-  {c:['kansas city','overland park'],s:['KS'],t:'royals'},
-  {c:['minneapolis','st. paul'],s:['MN'],t:'twins'},
-  {c:['milwaukee','madison'],s:['WI'],t:'brewers'},
-  {c:['detroit','ann arbor','grand rapids'],s:['MI'],t:'tigers'},
-  {c:['denver','boulder','aurora'],s:['CO'],t:'rockies'},
-  {c:['phoenix','scottsdale','tempe','mesa','chandler','tucson'],s:['AZ'],t:'diamondbacks'},
-  {c:['toronto','mississauga','brampton'],s:['ON'],t:'bluejays'},
-  {c:['las vegas','henderson'],s:['NV'],t:'athletics'},
-  {c:['chicago','south side','comiskey'],s:[],t:'whitesox'},
+// ── STADIUM COORDS — nearest stadium wins, no city-string fragility ──────────
+const STADIUMS=[
+  {t:'padres',      lat:32.7076,lng:-117.1570},
+  {t:'dodgers',     lat:34.0739,lng:-118.2400},
+  {t:'angels',      lat:33.8003,lng:-117.8827},
+  {t:'giants',      lat:37.7786,lng:-122.3893},
+  {t:'athletics',   lat:36.0900,lng:-115.1503},
+  {t:'mariners',    lat:47.5914,lng:-122.3325},
+  {t:'rockies',     lat:39.7559,lng:-104.9942},
+  {t:'diamondbacks',lat:33.4453,lng:-112.0667},
+  {t:'rangers',     lat:32.7512,lng:-97.0832},
+  {t:'astros',      lat:29.7573,lng:-95.3555},
+  {t:'twins',       lat:44.9817,lng:-93.2778},
+  {t:'brewers',     lat:43.0280,lng:-87.9712},
+  {t:'cubs',        lat:41.9484,lng:-87.6553},
+  {t:'whitesox',    lat:41.8299,lng:-87.6338},
+  {t:'tigers',      lat:42.3390,lng:-83.0485},
+  {t:'guardians',   lat:41.4962,lng:-81.6852},
+  {t:'reds',        lat:39.0975,lng:-84.5085},
+  {t:'pirates',     lat:40.4469,lng:-80.0057},
+  {t:'cardinals',   lat:38.6226,lng:-90.1928},
+  {t:'royals',      lat:39.0517,lng:-94.4803},
+  {t:'bluejays',    lat:43.6414,lng:-79.3894},
+  {t:'yankees',     lat:40.8296,lng:-73.9262},
+  {t:'mets',        lat:40.7571,lng:-73.8458},
+  {t:'redsox',      lat:42.3467,lng:-71.0972},
+  {t:'phillies',    lat:39.9061,lng:-75.1665},
+  {t:'nationals',   lat:38.8730,lng:-77.0074},
+  {t:'orioles',     lat:39.2838,lng:-76.6218},
+  {t:'braves',      lat:33.8908,lng:-84.4678},
+  {t:'marlins',     lat:25.7781,lng:-80.2197},
+  {t:'rays',        lat:27.7683,lng:-82.6534},
 ];
+function haversine(la1,lo1,la2,lo2){
+  const R=3958.8,dLat=(la2-la1)*Math.PI/180,dLon=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
 async function pinLocalTeam(){
   try{
-    const r=await fetch('https://ipapi.co/json/');const d=await r.json();
-    const city=(d.city||'').toLowerCase(),state=(d.region_code||'').toUpperCase();
-    let tid=null;
-    for(const e of GEO){if(e.c.some(c=>city.includes(c)||c.includes(city.split(' ')[0]))){tid=e.t;break;}}
-    if(!tid)for(const e of GEO){if(e.s.includes(state)){tid=e.t;break;}}
-    if(!tid)return;
-    const tm=TM[tid];window._localTeam=tid;renderTeams();
+    const r=await fetch('https://ipapi.co/json/');
+    const d=await r.json();
+    if(!d.latitude||!d.longitude)return;
+    const lat=parseFloat(d.latitude),lng=parseFloat(d.longitude);
+    let best=null,bestDist=Infinity;
+    for(const s of STADIUMS){const dist=haversine(lat,lng,s.lat,s.lng);if(dist<bestDist){bestDist=dist;best=s.t;}}
+    if(!best)return;
+    const tm=TM[best];
+    if(!tm)return;
+    window._localTeam=best;
+    renderTeams();
     const b=document.getElementById('local-banner');
     b.style.display='flex';
-    b.innerHTML=`${logo(tm.mid,38)}<div style="flex:1;min-width:0"><div class="local-lbl">&#128205; Your Local Team</div><div class="local-name">${tm.n}</div><div class="local-meta">${uniqueNames(P.filter(p=>p.t===tid)).length} players tracked &bull; ${tm.w}-${tm.l}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:${tm.c};opacity:.8">${tm.ab}</div>`;
-  }catch(e){}
+    b.innerHTML=`${logo(tm.mid,38)}<div style="flex:1;min-width:0"><div class="local-lbl">&#128205; Your Local Team</div><div class="local-name">${tm.n}</div><div class="local-meta">${uniqueNames(P.filter(p=>p.t===best)).length} players tracked &bull; ${tm.w}-${tm.l}</div></div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:${tm.c};opacity:.8">${tm.ab}</div>`;
+  }catch(e){console.warn('pinLocalTeam:',e);}
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
