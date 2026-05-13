@@ -1621,7 +1621,19 @@ function toggleExtra(id,btn){
 }
 
 
-function pRowHtml(p){return `<div class="prow" id="pr-${p.n.replace(/\W/g,'')}"><button class="pbtn" onclick="playTrack('${p.id||''}','${esc(p.n)}','${esc(p.s)}',this)">&#9654;</button><div><div class="pname">${p.n}</div></div><div class="song-cell">${artImg(p)}<div style="min-width:0"><div class="sname">${p.s}</div><div class="sartist">${p.a}</div></div></div><div class="src-col">${srcBadge(p)}<div class="upd-date">${fmtDate(p.upd)}</div></div></div>`;}
+function pRowHtml(p){
+  var sid=(p.id||'').replace(/'/g,'');
+  var sn=esc(p.s);var an=esc(p.a);var pn=p.n;
+  return '<div class="prow" id="pr-'+pn.replace(/[^a-zA-Z0-9]/g,'')+'">'
+    +'<button class="pbtn" onclick="playTrack(''+sid+'',''+esc(pn)+'',''+sn+'',this)">&#9654;</button>'
+    +'<div><div class="pname">'+pn+'</div></div>'
+    +'<div class="song-cell">'+artImg(p)+'<div style="min-width:0">'
+    +'<div class="sname">'+p.s+'</div>'
+    +'<div class="sartist">'+p.a+'</div>'
+    +'</div></div>'
+    +'<div class="src-col">'+srcBadge(p)+'<div class="upd-date">'+fmtDate(p.upd)+'</div></div>'
+    +'</div>';
+}
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let CV='teams',CL='ALL',SQ='',PV='teams';
@@ -1888,9 +1900,9 @@ document.getElementById('st-p').textContent=uP;
 document.getElementById('st-s').textContent=uS;
 document.getElementById('st-a').textContent=uA;
 document.getElementById('badge').textContent=uP+' players';
-renderTeams();
-renderGames();
+fetchTodayGames();
 pinLocalTeam();
+initRoute();
 </script>
 </body>
 </html>
