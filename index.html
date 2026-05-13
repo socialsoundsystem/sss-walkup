@@ -219,7 +219,6 @@ footer{text-align:center;padding:40px 20px;border-top:1px solid var(--border);ma
   .src-col{display:none !important}
   .embed-wrap{width:calc(100vw - 24px);right:12px}
 }
-.live-game{color:#ff4040;font-weight:600}
 </style>
 </head>
 <body>
@@ -288,7 +287,7 @@ footer{text-align:center;padding:40px 20px;border-top:1px solid var(--border);ma
     <div class="section-head">
       <div class="live-dot"></div>
       <div class="section-title">GAMES TODAY</div>
-      <div class="section-sub" id="games-date-label"></div>
+      <div class="section-sub">Monday, May 11, 2026</div>
     </div>
     <div class="games-grid" id="games-grid"></div>
   </div>
@@ -1498,68 +1497,14 @@ const P=[
   {n:"Will Warren",t:"yankees",s:"Black Dog - Remaster",a:"Led Zeppelin",p:"P",id:null,src:"auto",upd:"2026-05-11"}
 ];
 
-let TODAY_GAMES=[];
-async function fetchTodayGames(){
-  const pad=n=>String(n).padStart(2,'0');
-  const now=new Date();
-  const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  // Update date label
-  const lbl=document.getElementById('games-date-label');
-  if(lbl) lbl.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).toUpperCase();
-  try{
-    const url=`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${ds}&hydrate=team,linescore,probablePitcher`;
-    const r=await fetch(url);
-    const d=await r.json();
-    const games=(d.dates&&d.dates[0]&&d.dates[0].games)||[];
-    TODAY_GAMES=games.map(g=>{
-      const away=g.teams.away,home=g.teams.home;
-      const awaySlug=teamSlug(away.team.name);
-      const homeSlug=teamSlug(home.team.name);
-      const status=g.status.abstractGameState; // Preview, Live, Final
-      const inning=g.linescore?`${g.linescore.inningHalf||''} ${g.linescore.currentInningOrdinal||''}`.trim():'';
-      const awayScore=g.teams.away.score;
-      const homeScore=g.teams.home.score;
-      const gameTime=status==='Preview'
-        ? new Date(g.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'})
-        : status==='Live' ? `LIVE · ${inning}`
-        : status==='Final' ? `FINAL`
-        : g.gameDate;
-      return{
-        away:awaySlug,
-        home:homeSlug,
-        time:gameTime,
-        tv:g.content&&g.content.media?'':'' ,
-        awayP:away.probablePitcher?away.probablePitcher.fullName:'TBD',
-        homeP:home.probablePitcher?home.probablePitcher.fullName:'TBD',
-        awayScore:awayScore,
-        homeScore:homeScore,
-        status:status,
-        inning:inning,
-      };
-    }).filter(g=>TM[g.away]&&TM[g.home]);
-    renderGames();
-  }catch(e){
-    console.warn('fetchTodayGames failed:',e);
-    renderGames();
-  }
-}
-// Map full team names to our slugs
-function teamSlug(name){
-  const MAP={
-    'Los Angeles Dodgers':'dodgers','New York Yankees':'yankees','New York Mets':'mets',
-    'Boston Red Sox':'redsox','Chicago Cubs':'cubs','Chicago White Sox':'whitesox',
-    'Houston Astros':'astros','Atlanta Braves':'braves','San Francisco Giants':'giants',
-    'Los Angeles Angels':'angels','San Diego Padres':'padres','Seattle Mariners':'mariners',
-    'Philadelphia Phillies':'phillies','St. Louis Cardinals':'cardinals','Milwaukee Brewers':'brewers',
-    'Minnesota Twins':'twins','Arizona Diamondbacks':'diamondbacks','Colorado Rockies':'rockies',
-    'Texas Rangers':'rangers','Toronto Blue Jays':'bluejays','Baltimore Orioles':'orioles',
-    'Washington Nationals':'nationals','Tampa Bay Rays':'rays','Miami Marlins':'marlins',
-    'Cleveland Guardians':'guardians','Detroit Tigers':'tigers','Kansas City Royals':'royals',
-    'Pittsburgh Pirates':'pirates','Cincinnati Reds':'reds','Oakland Athletics':'athletics',
-    'Athletics':'athletics',
-  };
-  return MAP[name]||name.toLowerCase().replace(/\s+/g,'');
-}
+const TODAY_GAMES=[
+  {away:"angels",home:"guardians",time:"6:10 PM ET",tv:"CLEG/ABTV",awayP:"Reid Detmers",homeP:"Joey Cantillo"},
+  {away:"yankees",home:"orioles",time:"6:35 PM ET",tv:"MASN/YES",awayP:"Carlos Rodon",homeP:"Kyle Bradish"},
+  {away:"rays",home:"bluejays",time:"7:07 PM ET",tv:"SN1/RAYS",awayP:"Drew Rasmussen",homeP:"Kevin Gausman"},
+  {away:"diamondbacks",home:"rangers",time:"8:05 PM ET",tv:"RSN/ARID",awayP:"Tommy Henry",homeP:"Nathan Eovaldi"},
+  {away:"mariners",home:"astros",time:"8:10 PM ET",tv:"FS1/SCHN",awayP:"George Kirby",homeP:"Framber Valdez"},
+  {away:"giants",home:"dodgers",time:"10:10 PM ET",tv:"SNLA/NBCSBA",awayP:"Logan Webb",homeP:"Tyler Glasnow"},
+];
 const DIVS=[
   {id:"NL Central",teams:["cubs","cardinals","pirates","brewers","reds"]},
   {id:"NL East",teams:["braves","phillies","mets","nationals","marlins"]},
@@ -1602,22 +1547,15 @@ function setLeague(lg,btn){CL=lg;document.querySelectorAll('.tab').forEach(t=>t.
 function openMobNav(){
   var nav=document.getElementById('mob-nav');
   if(!nav.querySelector('.nav-btn')){
-    // Query all nav buttons regardless of visibility
-    var btns=Array.from(document.querySelectorAll('.nav-btn')).filter(function(b){return !nav.contains(b);});
-    btns.forEach(function(btn){
+    document.querySelectorAll('.header-right .nav-btn').forEach(function(btn){
       var c=btn.cloneNode(true);
-      c.style.display='block';
-      c.addEventListener('click',function(){closeMobNav();btn.click();});
+      c.addEventListener('click',function(){closeMobNav();});
       nav.appendChild(c);
     });
   }
   nav.classList.add('open');
-  document.body.style.overflow='hidden';
 }
-function closeMobNav(){
-  document.getElementById('mob-nav').classList.remove('open');
-  document.body.style.overflow='';
-}
+function closeMobNav(){document.getElementById('mob-nav').classList.remove('open');}
 function renderTeams(){
   const q=SQ.toLowerCase(),srp=document.getElementById('sr-panel'),grid=document.getElementById('teams-grid');
   if(q.length>1){
@@ -1687,11 +1625,11 @@ function renderGames(){
     const awayP=P.filter(p=>p.t===g.away).slice(0,7),homeP=P.filter(p=>p.t===g.home).slice(0,7);
     const mkMini=p=>`<img class="mini-art" data-art="1" data-song="${esc(p.s)}" data-artist="${esc(p.a)}" data-sid="${p.id||''}" src="" title="${esc(p.n)}: ${esc(p.s)}"/>`;
     return`<div class="game-card" onclick="openMatchup('${g.away}','${g.home}')">
-      <div class="game-card-top"><span class="game-time${g.status==='Live'?' live-game':''}">${g.status==='Live'?'🔴':'🕐'} ${g.time}${g.status!=='Preview'&&g.awayScore!=null?' · '+g.awayScore+'-'+g.homeScore:''}</span><span class="game-tv">${g.tv}</span></div>
+      <div class="game-card-top"><span class="game-time${g.status==='Live'?' live-game':''}">${g.status==='Live'?'🔴 LIVE '+g.inning:g.status==='Final'?'FINAL':'🕐 '+g.time}</span><span class="game-tv">${g.tv}</span></div>
       <div class="game-body">
-        <div class="game-team">${logo(away.mid,34)}<div class="game-info"><div class="game-team-name">${away.n} <span class="away-tag">AWAY</span></div><div class="game-team-sp">SP: ${g.awayP}</div></div><div class="game-rec">${away.w}-${away.l}</div></div>
+        <div class="game-team">${logo(away.mid,34)}<div class="game-info"><div class="game-team-name">${away.n} <span class="away-tag">AWAY</span></div><div class="game-team-sp">SP: ${g.awayP}</div></div><div class="game-rec">${(g.status==='Live'||g.status==='Final')&&g.awayScore!=null?g.awayScore:away.w+'-'+away.l}</div></div>
         <div class="game-vs">VS</div>
-        <div class="game-team">${logo(home.mid,34)}<div class="game-info"><div class="game-team-name">${home.n}</div><div class="game-team-sp">SP: ${g.homeP}</div></div><div class="game-rec">${home.w}-${home.l}</div></div>
+        <div class="game-team">${logo(home.mid,34)}<div class="game-info"><div class="game-team-name">${home.n}</div><div class="game-team-sp">SP: ${g.homeP}</div></div><div class="game-rec">${(g.status==='Live'||g.status==='Final')&&g.homeScore!=null?g.homeScore:home.w+'-'+home.l}</div></div>
       </div>
       <div class="game-footer">
         <div class="game-footer-lbl">Walk-Up Soundtrack</div>
@@ -1808,8 +1746,7 @@ document.getElementById('st-a').textContent=uA;
 document.getElementById('badge').textContent=uP+' players';
 renderTeams();
 renderGames();
-fetchTodayGames();
-  pinLocalTeam();
+pinLocalTeam();
 </script>
 </body>
 </html>
