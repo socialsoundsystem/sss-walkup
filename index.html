@@ -287,7 +287,7 @@ footer{text-align:center;padding:40px 20px;border-top:1px solid var(--border);ma
     <div class="section-head">
       <div class="live-dot"></div>
       <div class="section-title">GAMES TODAY</div>
-      <div class="section-sub">Monday, May 11, 2026</div>
+      <div class="section-sub" id="games-date-label">LOADING...</div>
     </div>
     <div class="games-grid" id="games-grid"></div>
   </div>
@@ -1497,14 +1497,58 @@ const P=[
   {n:"Will Warren",t:"yankees",s:"Black Dog - Remaster",a:"Led Zeppelin",p:"P",id:null,src:"auto",upd:"2026-05-11"}
 ];
 
-const TODAY_GAMES=[
-  {away:"angels",home:"guardians",time:"6:10 PM ET",tv:"CLEG/ABTV",awayP:"Reid Detmers",homeP:"Joey Cantillo"},
-  {away:"yankees",home:"orioles",time:"6:35 PM ET",tv:"MASN/YES",awayP:"Carlos Rodon",homeP:"Kyle Bradish"},
-  {away:"rays",home:"bluejays",time:"7:07 PM ET",tv:"SN1/RAYS",awayP:"Drew Rasmussen",homeP:"Kevin Gausman"},
-  {away:"diamondbacks",home:"rangers",time:"8:05 PM ET",tv:"RSN/ARID",awayP:"Tommy Henry",homeP:"Nathan Eovaldi"},
-  {away:"mariners",home:"astros",time:"8:10 PM ET",tv:"FS1/SCHN",awayP:"George Kirby",homeP:"Framber Valdez"},
-  {away:"giants",home:"dodgers",time:"10:10 PM ET",tv:"SNLA/NBCSBA",awayP:"Logan Webb",homeP:"Tyler Glasnow"},
-];
+let TODAY_GAMES=[];
+async function fetchTodayGames(){
+  const pad=n=>String(n).padStart(2,'0');
+  const now=new Date();
+  const ds=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const lbl=document.getElementById('games-date-label');
+  if(lbl)lbl.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).toUpperCase();
+  try{
+    const url=`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${ds}&hydrate=team,linescore,probablePitcher`;
+    const r=await fetch(url);
+    const d=await r.json();
+    const games=(d.dates&&d.dates[0]&&d.dates[0].games)||[];
+    TODAY_GAMES=games.map(g=>{
+      const away=g.teams.away,home=g.teams.home;
+      const status=g.status.abstractGameState;
+      const linescore=g.linescore||{};
+      const inning=`${linescore.inningHalf||''} ${linescore.currentInningOrdinal||''}`.trim();
+      const gameTime=status==='Live'?`LIVE · ${inning}`:status==='Final'?'FINAL':
+        new Date(g.gameDate).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+      return{
+        away:teamSlug(away.team.name),
+        home:teamSlug(home.team.name),
+        time:gameTime,
+        tv:'',
+        awayP:away.probablePitcher?away.probablePitcher.fullName:'TBD',
+        homeP:home.probablePitcher?home.probablePitcher.fullName:'TBD',
+        awayScore:away.score,
+        homeScore:home.score,
+        status:status,
+        inning:inning,
+      };
+    }).filter(g=>TM[g.away]&&TM[g.home]);
+    renderGames();
+  }catch(e){
+    console.warn('fetchTodayGames:',e);
+    renderGames();
+  }
+}
+function teamSlug(name){
+  const M={'Los Angeles Dodgers':'dodgers','New York Yankees':'yankees','New York Mets':'mets',
+    'Boston Red Sox':'redsox','Chicago Cubs':'cubs','Chicago White Sox':'whitesox',
+    'Houston Astros':'astros','Atlanta Braves':'braves','San Francisco Giants':'giants',
+    'Los Angeles Angels':'angels','San Diego Padres':'padres','Seattle Mariners':'mariners',
+    'Philadelphia Phillies':'phillies','St. Louis Cardinals':'cardinals','Milwaukee Brewers':'brewers',
+    'Minnesota Twins':'twins','Arizona Diamondbacks':'diamondbacks','Colorado Rockies':'rockies',
+    'Texas Rangers':'rangers','Toronto Blue Jays':'bluejays','Baltimore Orioles':'orioles',
+    'Washington Nationals':'nationals','Tampa Bay Rays':'rays','Miami Marlins':'marlins',
+    'Cleveland Guardians':'guardians','Detroit Tigers':'tigers','Kansas City Royals':'royals',
+    'Pittsburgh Pirates':'pirates','Cincinnati Reds':'reds','Oakland Athletics':'athletics',
+    'Athletics':'athletics'};
+  return M[name]||(name.toLowerCase().replace(/\s+/g,''));
+}
 const DIVS=[
   {id:"NL Central",teams:["cubs","cardinals","pirates","brewers","reds"]},
   {id:"NL East",teams:["braves","phillies","mets","nationals","marlins"]},
