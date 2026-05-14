@@ -1804,11 +1804,16 @@ function loadArtCloud(players,tid){
 
 // ── SPOTIFY EMBED ────────────────────────────────────────────────────────────
 function playTrack(btn, sid, name, song){
-  var wrap=document.getElementById('embed-wrap');
-  var iframe=document.getElementById('spotify-embed');
   if(sid){
+    // Embed the track directly
+    var wrap=document.getElementById('embed-wrap');
+    var iframe=document.getElementById('spotify-embed');
     iframe.src='https://open.spotify.com/embed/track/'+sid+'?utm_source=generator&theme=0';
     wrap.classList.add('visible');
+  } else {
+    // No track ID — open Spotify search in new tab
+    var q=encodeURIComponent((song||name||'')+' '+(name||''));
+    window.open('https://open.spotify.com/search/'+encodeURIComponent((song||'')+' '+(name||'')), '_blank');
   }
 }
 function closeEmbed(){
