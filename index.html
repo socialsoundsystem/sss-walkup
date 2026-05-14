@@ -295,6 +295,21 @@ h1 em{color:var(--accent);font-style:normal}
   .sartist{display:block !important}
   .embed-wrap{width:calc(100vw - 24px);right:12px}
 }
+
+/* ── CHART EXPAND ───────────────────────────────── */
+.chart-row{cursor:pointer;border-radius:8px;padding:10px 12px;transition:background .1s}
+.chart-row:hover{background:var(--bg3)}
+.chart-row-inner{display:flex;align-items:center;gap:14px;width:100%}
+.chart-play{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);
+  background:transparent;color:var(--accent);cursor:pointer;font-size:.75rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.chart-play:hover{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.chart-players{display:none;padding:8px 0 4px 58px;border-top:1px solid var(--border);margin-top:8px}
+.chart-players.open{display:block}
+.chart-player-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:.82rem}
+.chart-player-row .team-logo{width:20px;height:20px;object-fit:contain;flex-shrink:0}
+.chart-player-name{flex:1;font-weight:500}
+.chart-player-team{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -1916,6 +1931,13 @@ function renderGames(games){
 }
 
 // ── CHARTS ───────────────────────────────────────────────────────────────────
+
+function toggleChartRow(id){
+  var el=document.getElementById('cp-'+id);
+  if(el){
+    el.classList.toggle('open');
+  }
+}
 function renderCharts(){
   // Top Artists chart
   var artistCounts={};
@@ -1933,13 +1955,14 @@ function renderCharts(){
       // Find a player with this artist to get art
       var sample=P.find(function(p){return p.a.split('·')[0].trim()===name;});
       var artHtml=sample?artImg(sample):'<div class="chart-art"></div>';
-      return '<div class="chart-row">'
-        +'<div class="chart-rank'+(i<3?' top3':'')+'">'+( i+1)+'</div>'
-        +artHtml
-        +'<div class="chart-info"><div class="chart-song">'+name+'</div>'
-        +'<div class="chart-bar" style="width:'+pct+'%"></div></div>'
-        +'<div class="chart-count">'+count+' player'+(count>1?'s':'')+'</div>'
-        +'</div>';
+      var aid='ar-'+i;
+      var aPlayers=P.filter(function(p){return p.a.split('·')[0].trim()===name;});
+      var aPlayerRows=aPlayers.slice(0,10).map(function(p){
+        var tm=TM[p.t];
+        return '<div class="chart-player-row">'          +'<img class="team-logo" src="https://www.mlbstatic.com/team-logos/'+tm.mid+'.svg" onerror="this.style.display=\'none\'"/>'          +'<span class="chart-player-name">'+p.n+'</span>'          +'<span class="chart-player-team">'+p.s+'</span>'          +'</div>';
+      }).join('');
+      return '<div class="chart-row" id="'+aid+'">'        +'<div class="chart-row-inner" onclick="toggleChartRow(\''+aid+'\')">'
+        +'<div class="chart-rank'+(i<3?' top3':'')+'">'+( i+1)+'</div>'        +artHtml        +'<div class="chart-info"><div class="chart-song">'+name+'</div>'        +'<div class="chart-bar" style="width:'+pct+'%"></div></div>'        +'<button class="chart-play" onclick="event.stopPropagation();playTrack(this,\'\',\''+esc(name)+'\',\''+esc(name)+'\')">&#9654;</button>'        +'<div class="chart-count">'+count+' player'+(count>1?'s':'')+'</div>'        +'</div>'        +'<div class="chart-players" id="cp-'+aid+'">'+aPlayerRows+'</div>'        +'</div>';
     }).join('');
   }
 
@@ -1956,14 +1979,19 @@ function renderCharts(){
     var song=parts[0],artist=parts[1],sid=parts[2];
     var count=entry[1];
     var pct=Math.round(count/max*100);
-    return '<div class="chart-row" onclick="'+(sid?'playTrack(this,\''+sid+'\',\''+esc(artist)+'\',\''+esc(song)+'\')':'')+'">'
-      +'<div class="chart-rank'+(i<3?' top3':'')+'">'+( i+1)+'</div>'
-      +artImg({s:song,a:artist,id:sid})
-      +'<div class="chart-info"><div class="chart-song">'+song+'</div><div class="chart-artist">'+artist+'</div>'
-      +'<div class="chart-bar" style="width:'+pct+'%"></div></div>'
-      +'<div class="chart-count">'+count+' player'+(count>1?'s':'')+'</div>'
-      +'</div>';
-  }).join('');
+    var safeId='cr-'+i;
+    // Find all players with this song
+    var players=P.filter(function(p){return p.s===song&&p.a===artist;});
+    var playerRows=players.map(function(p){
+      var tm=TM[p.t];
+      return '<div class="chart-player-row">'
+        +'<img class="team-logo" src="https://www.mlbstatic.com/team-logos/'+tm.mid+'.svg" onerror="this.style.display=\'none\'"/>'
+        +'<span class="chart-player-name">'+p.n+'</span>'
+        +'<span class="chart-player-team">'+tm.ab+' &bull; '+tm.div+'</span>'
+        +'</div>';
+    }).join('');
+    return '<div class="chart-row" id="'+safeId+'">'      +'<div class="chart-row-inner" onclick="toggleChartRow(\''+safeId+'\')">'
+      +'<div class="chart-rank'+(i<3?' top3':'')+'">'+( i+1)+'</div>'      +artImg({s:song,a:artist,id:sid})      +'<div class="chart-info"><div class="chart-song">'+song+'</div>'      +'<div class="chart-artist">'+artist+'</div>'      +'<div class="chart-bar" style="width:'+pct+'%"></div></div>'      +'<button class="chart-play" onclick="event.stopPropagation();playTrack(this,\''+sid+'\',\''+esc(artist)+'\',\''+esc(song)+'\')">&#9654;</button>'      +'<div class="chart-count">'+count+' player'+(count>1?'s':'')+'</div>'      +'</div>'      +'<div class="chart-players" id="cp-'+safeId+'">'+playerRows+'</div>'      +'</div>';  }).join('');
 }
 
 // ── STANDINGS ────────────────────────────────────────────────────────────────
