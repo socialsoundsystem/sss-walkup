@@ -1995,10 +1995,10 @@ function renderCharts(){
 }
 
 // ── STANDINGS ────────────────────────────────────────────────────────────────
-async function fetchStandings(){
-  var dateEl=document.getElementById('std-date');
+async function fetchStandings(silent){
   var now=new Date();
-  dateEl.textContent=now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
+  var dateEl=document.getElementById('std-date');
+  if(dateEl) dateEl.textContent=now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}).toUpperCase();
   try{
     var r=await fetch('https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2026&standingsTypes=regularSeason&hydrate=team');
     var d=await r.json();
@@ -2011,7 +2011,8 @@ async function fetchStandings(){
       });
     }
   }catch(e){console.warn('standings:',e);}
-  renderStandings();
+  if(CV==='teams') renderTeams();
+  if(!silent) renderStandings();
 }
 
 function renderStandings(){
@@ -2116,6 +2117,7 @@ function initRoute(){
 // ── STARTUP ───────────────────────────────────────────────────────────────────
 function startup(){
   buildDivFilters();
+  fetchStandings(true);
   initRoute();
   pinLocalTeam();
 }
