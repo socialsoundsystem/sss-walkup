@@ -101,11 +101,10 @@
       });
     }
 
-    // ── Re-render active view ─────────────────────────────────────────────
-    if (typeof CV !== 'undefined') {
-      if (CV === 'games')     renderGames();
-      if (CV === 'standings') renderStandings();
-    }
+    // ── Re-render everything ──────────────────────────────────────────────
+    // Always pre-render both so data is fresh when user navigates to either tab
+    if (typeof renderGames === 'function')     renderGames();
+    if (typeof renderStandings === 'function') renderStandings();
 
     // ── Post-render: overlay live scores on game cards ────────────────────
     if (TODAY_GAMES.some(g => g.status === 'Live' || g.status === 'Final')) {
@@ -116,12 +115,10 @@
         const isFinal = g.status === 'Final';
         const isLive  = g.status === 'Live';
 
-        // Replace W-L records with scores in the card
         const recs = card.querySelectorAll('.game-rec');
         if (recs[0]) recs[0].textContent = g.awayScore;
         if (recs[1]) recs[1].textContent = g.homeScore;
 
-        // Update time display
         const timeEl = card.querySelector('.game-time');
         if (timeEl) {
           if (isFinal) {
