@@ -8,9 +8,12 @@
  */
 (async function liveMLB() {
 
-  // ET date → YYYY-MM-DD (handles midnight rollover correctly)
-  const today  = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-  const season = new Date().getFullYear();
+  // ET date → YYYY-MM-DD
+  const now = new Date();
+  const etOffset = -4; // ET is UTC-4 (EDT) or UTC-5 (EST)
+  const etNow = new Date(now.getTime() + (etOffset * 60 + now.getTimezoneOffset()) * 60000);
+  const today = `${etNow.getFullYear()}-${String(etNow.getMonth()+1).padStart(2,'0')}-${String(etNow.getDate()).padStart(2,'0')}`;
+  const season = etNow.getFullYear();
 
   // Build MLB numeric team ID → app slug map from the existing T array
   const midToSlug = {};
@@ -139,4 +142,4 @@
     console.warn('⚠️ MLB Stats API unavailable — using baked-in data:', e.message);
   }
 
-})();git add live-mlb.js && git commit -m "fix: pre-render games after live data loads" && git push
+})();
