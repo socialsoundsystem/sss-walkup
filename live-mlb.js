@@ -6,12 +6,19 @@
  *
  * No API key. No auth. Fully CORS-open.
  */
-(async function liveMLB() {
+(function waitForT() {
+  if (typeof T === 'undefined' || !T.length || typeof TODAY_GAMES === 'undefined') {
+    setTimeout(waitForT, 100);
+    return;
+  }
+  liveMLB();
+})();
 
-  // ET date → YYYY-MM-DD
+async function liveMLB() {
+
+  // ET date — calculated from UTC with ET offset
   const now = new Date();
-  const etOffset = -4; // ET is UTC-4 (EDT) or UTC-5 (EST)
-  const etNow = new Date(now.getTime() + (etOffset * 60 + now.getTimezoneOffset()) * 60000);
+  const etNow = new Date(now.toLocaleString('en-US', {timeZone: 'America/New_York'}));
   const today = `${etNow.getFullYear()}-${String(etNow.getMonth()+1).padStart(2,'0')}-${String(etNow.getDate()).padStart(2,'0')}`;
   const season = etNow.getFullYear();
 
@@ -141,5 +148,4 @@
   } catch (e) {
     console.warn('⚠️ MLB Stats API unavailable — using baked-in data:', e.message);
   }
-
-})();
+}
