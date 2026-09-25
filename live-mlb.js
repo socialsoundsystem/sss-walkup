@@ -139,4 +139,4 @@
     console.warn('⚠️ MLB Stats API unavailable — using baked-in data:', e.message);
   }
 
-})();
+})();git add live-mlb.js && git commit -m "fix: pre-render games after live data loads" && git push
