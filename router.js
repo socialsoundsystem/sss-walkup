@@ -3,85 +3,94 @@
  * Adds clean URLs to the existing SPA without modifying index.html logic.
  *
  * Routes:
- *   /              → Teams
- *   /games         → Games Today
- *   /charts        → Charts
- *   /standings     → Standings
- *   /team/:slug    → Team detail (e.g. /team/dodgers)
+ *   /                    → Teams
+ *   /games               → Games Today
+ *   /charts              → Charts
+ *   /standings           → Standings
+ *   /team/:slug          → Team detail  (e.g. /team/dodgers)
  *   /matchup/:away/:home → Matchup detail
  */
-(function() {
+(function () {
 
-  // Wait for page functions to be defined
+  let _initialLoad = true; // suppress URL pushes during first navigation
+
+  // ── Wait for page data to be ready ────────────────────────────────────────
   function init() {
-    if (typeof showView === 'undefined' || typeof openTeam === 'undefined') {
-      setTimeout(init, 50);
+    if (
+      typeof showView    === 'undefined' ||
+      typeof openTeam    === 'undefined' ||
+      typeof TM          === 'undefined' || !Object.keys(TM).length ||
+      typeof P           === 'undefined' || !P.length
+    ) {
+      setTimeout(init, 100);
       return;
     }
     setupRouter();
   }
 
   function setupRouter() {
-    // ── Store originals ─────────────────────────────────────────────────────
+    // ── Store originals ───────────────────────────────────────────────────
     const _showView    = window.showView;
     const _openTeam    = window.openTeam;
     const _openMatchup = window.openMatchup;
-    const _goBack      = window.goBack;
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
+    // ── URL map ───────────────────────────────────────────────────────────
     function viewToPath(v) {
-      if (v === 'teams')    return '/';
-      if (v === 'chart')    return '/charts';
-      return '/' + v; // games, standings, detail
+      if (v === 'teams')  return '/';
+      if (v === 'chart')  return '/charts';
+      if (v === 'detail') return window.location.pathname; // keep current team/matchup URL
+      return '/' + v;
     }
 
-    // ── Wrap showView ────────────────────────────────────────────────────────
-    window.showView = function(v) {
-      const path = viewToPath(v);
-      // Only push state if the path actually changed
-      if (window.location.pathname !== path) {
-        history.pushState({ type: 'view', view: v }, '', path);
+    // ── Wrap showView ─────────────────────────────────────────────────────
+    window.showView = function (v) {
+      if (!_initialLoad) {
+        const path = viewToPath(v);
+        if (window.location.pathname !== path) {
+          history.pushState({ type: 'view', view: v }, '', path);
+        }
       }
       _showView(v);
     };
 
-    // ── Wrap openTeam ────────────────────────────────────────────────────────
-    window.openTeam = function(tid) {
-      const path = '/team/' + tid;
-      if (window.location.pathname !== path) {
-        history.pushState({ type: 'team', team: tid }, '', path);
+    // ── Wrap openTeam ─────────────────────────────────────────────────────
+    window.openTeam = function (tid) {
+      if (!_initialLoad) {
+        const path = '/team/' + tid;
+        if (window.location.pathname !== path) {
+          history.pushState({ type: 'team', team: tid }, '', path);
+        }
       }
       _openTeam(tid);
     };
 
-    // ── Wrap openMatchup ─────────────────────────────────────────────────────
-    window.openMatchup = function(awayId, homeId) {
-      const path = '/matchup/' + awayId + '/' + homeId;
-      if (window.location.pathname !== path) {
-        history.pushState({ type: 'matchup', away: awayId, home: homeId }, '', path);
+    // ── Wrap openMatchup ──────────────────────────────────────────────────
+    window.openMatchup = function (awayId, homeId) {
+      if (!_initialLoad) {
+        const path = '/matchup/' + awayId + '/' + homeId;
+        if (window.location.pathname !== path) {
+          history.pushState({ type: 'matchup', away: awayId, home: homeId }, '', path);
+        }
       }
       _openMatchup(awayId, homeId);
     };
 
-    // ── Wrap goBack to use browser history ───────────────────────────────────
-    window.goBack = function() {
-      history.back();
-    };
+    // ── goBack uses browser history ───────────────────────────────────────
+    window.goBack = function () { history.back(); };
 
-    // ── Handle browser back / forward ────────────────────────────────────────
-    window.addEventListener('popstate', function(e) {
+    // ── Browser back / forward ────────────────────────────────────────────
+    window.addEventListener('popstate', function (e) {
       const s = e.state;
-      if (!s) { _showView('teams'); return; }
+      if (!s)               { _showView('teams');               return; }
       if (s.type === 'view')    _showView(s.view);
       if (s.type === 'team')    _openTeam(s.team);
       if (s.type === 'matchup') _openMatchup(s.away, s.home);
     });
 
-    // ── Parse URL on direct load ─────────────────────────────────────────────
+    // ── Parse URL on direct load ──────────────────────────────────────────
     const parts = window.location.pathname.split('/').filter(Boolean);
 
     if (!parts.length) {
-      // / → Teams (already the default, just set state)
       history.replaceState({ type: 'view', view: 'teams' }, '', '/');
 
     } else if (parts[0] === 'games') {
@@ -105,7 +114,10 @@
       _openMatchup(parts[1], parts[2]);
     }
 
-    console.log('✅ Router ready — path:', window.location.pathname);
+    // Allow URL pushes from now on
+    setTimeout(() => { _initialLoad = false; }, 0);
+
+    console.log('✅ Router ready —', window.location.pathname);
   }
 
   init();
