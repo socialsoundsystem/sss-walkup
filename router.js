@@ -14,20 +14,10 @@
 
   let _initialLoad = true; // suppress URL pushes during first navigation
 
-  // ── Wait for page data to be ready ────────────────────────────────────────
-  function init() {
-    if (
-      typeof showView    === 'undefined' ||
-      typeof openTeam    === 'undefined' ||
-      typeof TM          === 'undefined' || !Object.keys(TM).length ||
-      typeof P           === 'undefined' || !P.length
-    ) {
-      setTimeout(init, 100);
-      return;
-    }
-    // Extra delay to let the page fully settle before navigating
-    setTimeout(setupRouter, 300);
-  }
+  // Wait for full page load — more reliable than polling
+  window.addEventListener('load', function () {
+    setTimeout(setupRouter, 200);
+  });
 
   function setupRouter() {
     // ── Store originals ───────────────────────────────────────────────────
@@ -121,5 +111,7 @@
     console.log('✅ Router ready —', window.location.pathname);
   }
 
-  init();
+  window.addEventListener('load', function () {
+    setTimeout(setupRouter, 200);
+  });
 })();
