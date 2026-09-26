@@ -25,7 +25,8 @@
       setTimeout(init, 100);
       return;
     }
-    setupRouter();
+    // Extra delay to let the page fully settle before navigating
+    setTimeout(setupRouter, 300);
   }
 
   function setupRouter() {
@@ -115,7 +116,7 @@
     }
 
     // Allow URL pushes from now on
-    setTimeout(() => { _initialLoad = false; }, 0);
+    setTimeout(() => { _initialLoad = false; }, 500);
 
     console.log('✅ Router ready —', window.location.pathname);
   }
