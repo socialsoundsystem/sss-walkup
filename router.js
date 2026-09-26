@@ -14,10 +14,15 @@
 
   let _initialLoad = true; // suppress URL pushes during first navigation
 
-  // Wait for full page load — more reliable than polling
-  window.addEventListener('load', function () {
+  // If load already fired (likely — router.js is the last script),
+  // run immediately; otherwise wait for it.
+  if (document.readyState === 'complete') {
     setTimeout(setupRouter, 200);
-  });
+  } else {
+    window.addEventListener('load', function () {
+      setTimeout(setupRouter, 200);
+    });
+  }
 
   function setupRouter() {
     // ── Store originals ───────────────────────────────────────────────────
