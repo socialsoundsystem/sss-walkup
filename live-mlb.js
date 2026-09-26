@@ -102,6 +102,8 @@ async function liveMLB() {
           weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
           timeZone: 'America/New_York',
         });
+      const statDate = document.getElementById('stat-date');
+      if (statDate) statDate.textContent = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', timeZone:'America/New_York'});
       }
 
       // Update the standings "last updated" line
